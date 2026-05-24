@@ -2,50 +2,399 @@
 <html lang="zh-CN">
 <head>
   <meta charset="UTF-8" />
-  <title>FinalShell 离线激活码生成 </title>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>FinalShell 离线激活码生成器</title>
   <style>
-    body {font-family: sans-serif; padding: 2rem; background: #f5f5f5;}
-    .box {background: white; padding: 2rem; border-radius: 8px; max-width: 500px; margin: auto; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
-    input, button {padding: 0.5rem; width: 100%; margin-top: 1rem;}
-    .result {margin-top: 1.5rem; white-space: pre-wrap;}
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      min-height: 100vh;
+      background: linear-gradient(135deg, #0f172a 0%, #1e3a5f 50%, #0f172a 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 1rem;
+    }
+
+    .container {
+      background: rgba(255, 255, 255, 0.05);
+      backdrop-filter: blur(20px);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 16px;
+      padding: 2rem;
+      max-width: 560px;
+      width: 100%;
+      box-shadow: 0 25px 50px rgba(0, 0, 0, 0.3);
+    }
+
+    .header {
+      text-align: center;
+      margin-bottom: 1.5rem;
+    }
+
+    .header h1 {
+      font-size: 1.5rem;
+      color: #e2e8f0;
+      font-weight: 600;
+      letter-spacing: 0.5px;
+    }
+
+    .header .subtitle {
+      font-size: 0.8rem;
+      color: #64748b;
+      margin-top: 0.3rem;
+    }
+
+    .input-group {
+      display: flex;
+      gap: 0.5rem;
+      margin-bottom: 1rem;
+    }
+
+    .input-group input {
+      flex: 1;
+      padding: 0.75rem 1rem;
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      border-radius: 10px;
+      background: rgba(255, 255, 255, 0.08);
+      color: #e2e8f0;
+      font-size: 0.95rem;
+      outline: none;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+
+    .input-group input::placeholder {
+      color: #64748b;
+    }
+
+    .input-group input:focus {
+      border-color: #3b82f6;
+      box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
+    }
+
+    .btn-group {
+      display: flex;
+      gap: 0.5rem;
+    }
+
+    .btn-generate-full {
+      flex: 1;
+      width: 100%;
+      padding: 0.7rem 1rem;
+      border: none;
+      border-radius: 10px;
+      font-size: 0.9rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      letter-spacing: 0.3px;
+      background: linear-gradient(135deg, #3b82f6, #2563eb);
+      color: #fff;
+    }
+
+    .btn-generate-full:hover {
+      background: linear-gradient(135deg, #2563eb, #1d4ed8);
+      transform: translateY(-1px);
+      box-shadow: 0 4px 15px rgba(59, 130, 246, 0.4);
+    }
+
+    .result {
+      margin-top: 1.5rem;
+      background: rgba(0, 0, 0, 0.3);
+      border-radius: 12px;
+      padding: 1.25rem;
+      min-height: 120px;
+      display: none;
+    }
+
+    .result.show {
+      display: block;
+    }
+
+    .result pre {
+      color: #cbd5e1;
+      font-family: "JetBrains Mono", "Fira Code", "Consolas", monospace;
+      font-size: 0.85rem;
+      line-height: 1.8;
+      white-space: pre-wrap;
+      word-break: break-all;
+      margin: 0;
+    }
+
+    .result .version-label {
+      color: #60a5fa;
+      font-weight: 600;
+      margin-top: 0.8rem;
+      display: block;
+    }
+
+    .result .version-label:first-child {
+      margin-top: 0;
+    }
+
+    .result .code-line {
+      color: #a5b4fc;
+    }
+
+    .result .code-value {
+      color: #4ade80;
+      font-weight: 600;
+      letter-spacing: 0.5px;
+    }
+
+    .copy-icon {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 26px;
+      height: 26px;
+      margin-left: 0.5rem;
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 6px;
+      background: rgba(255, 255, 255, 0.06);
+      color: #94a3b8;
+      font-size: 0.75rem;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      vertical-align: middle;
+      line-height: 1;
+    }
+
+    .copy-icon:hover {
+      background: rgba(255, 255, 255, 0.15);
+      color: #fff;
+      border-color: rgba(255, 255, 255, 0.25);
+    }
+
+    .copy-icon.copied {
+      background: rgba(34, 197, 94, 0.2);
+      border-color: rgba(34, 197, 94, 0.4);
+      color: #4ade80;
+    }
+
+    .toast {
+      position: fixed;
+      top: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: #ef4444;
+      color: #fff;
+      padding: 0.7rem 1.5rem;
+      border-radius: 8px;
+      font-size: 0.9rem;
+      font-weight: 500;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.3s ease;
+      z-index: 999;
+      box-shadow: 0 5px 20px rgba(239, 68, 68, 0.4);
+    }
+
+    .toast.show {
+      opacity: 1;
+    }
   </style>
 </head>
 <body>
-  <div class="box">
-    <h2> 离线激活码生成器 </h2>
-    <input id="machineCode" type="text" placeholder=" 请输入机器码..." />
-    <button onclick="generate()"> 生成授权码 </button>
-    <div class="result" id="output"></div>
+  <div class="container">
+    <div class="header">
+      <h1>🔑 FinalShell 离线激活码生成器</h1>
+      <p class="subtitle">支持 v3.9.6 ~ v4.6 多个版本</p>
+    </div>
+
+    <div class="input-group">
+      <input
+        id="machineCode"
+        type="text"
+        placeholder="请输入机器码，例如：xxxx-xxxx-xxxx-xxxx"
+        autocomplete="off"
+        spellcheck="false"
+      />
+    </div>
+
+    <div class="btn-group">
+      <button id="btnGenerate" class="btn-generate-full">⚡ 生成授权码</button>
+    </div>
+
+    <div id="output" class="result"></div>
   </div>
 
+  <div id="toast" class="toast"></div>
+
+  <script src="crypto-js.min.js"></script>
   <script>
-    function md5(str) {return CryptoJS.MD5(str).toString();}
+    (function () {
+      // ==========================================
+      // 工具函数
+      // ==========================================
+      const md5 = (str) => CryptoJS.MD5(str).toString();
+      const keccak384 = (str) =>
+        CryptoJS.SHA3(str, { outputLength: 384 }).toString();
+      const sliceHash = (hash) => hash.slice(12, 28);
 
-    function keccak384(str) {return CryptoJS.SHA3(str, { outputLength: 384}).toString();}
+      // ==========================================
+      // 版本配置（数据驱动）
+      // ==========================================
+      const VERSION_CONFIGS = [
+        {
+          label: "FinalShell < 3.9.6",
+          algorithm: "md5",
+          editions: [
+            { name: "高级版", salt: ["61305", "8552"], slice: [8, 24] },
+            { name: "专业版", salt: ["2356", "13593"], slice: [8, 24] },
+          ],
+        },
+        {
+          label: "FinalShell ≥ 3.9.6",
+          algorithm: "keccak384",
+          editions: [
+            { name: "高级版", salt: "hSf(78cvVlS5E" },
+            { name: "专业版", salt: "FF3Go(*Xvbb5s2" },
+          ],
+        },
+        {
+          label: "FinalShell 4.5",
+          algorithm: "keccak384",
+          editions: [
+            { name: "高级版", salt: "wcegS3gzA$" },
+            { name: "专业版", salt: "b(xxkHn%z);x" },
+          ],
+        },
+        {
+          label: "FinalShell 4.6",
+          algorithm: "keccak384",
+          editions: [
+            { name: "高级版", salt: "csSf5*xlkgYSX,y" },
+            { name: "专业版", salt: "Scfg*ZkvJZc,s,Y" },
+          ],
+        },
+      ];
 
-    function generate() {const code = document.getElementById('machineCode').value.trim();
-      const out = document.getElementById('output');
-      let res = '';
+      // ==========================================
+      // 生成单个激活码
+      // ==========================================
+      function generateCode(machineCode, config) {
+        if (config.algorithm === "md5") {
+          const [prefix, suffix] = config.salt;
+          const hash = md5(prefix + machineCode + suffix);
+          const [start, end] = config.slice;
+          return hash.slice(start, end);
+        }
+        // keccak384
+        return sliceHash(keccak384(machineCode + config.salt));
+      }
 
-      res += 'FinalShell < 3.9.6\n';
-      res += '高级版:' + md5('61305' + code + '8552').slice(8, 24) + '\n';
-      res += '专业版:' + md5('2356' + code + '13593').slice(8, 24) + '\n\n';
+      // ==========================================
+      // 生成所有激活码并渲染结果
+      // ==========================================
+      function generateAll(machineCode) {
+        let html = "";
 
-      res += 'FinalShell ≥ 3.9.6\n';
-      res += '高级版:' + keccak384(code + 'hSf(78cvVlS5E').slice(12, 28) + '\n';
-      res += '专业版:' + keccak384(code + 'FF3Go(*Xvbb5s2').slice(12, 28) + '\n\n';
+        for (const version of VERSION_CONFIGS) {
+          html += `<span class="version-label">📦 ${version.label}</span>\n`;
 
-      res += 'FinalShell 4.5\n';
-      res += '高级版:' + keccak384(code + 'wcegS3gzA$').slice(12, 28) + '\n';
-      res += '专业版:' + keccak384(code + 'b(xxkHn%z);x').slice(12, 28) + '\n';
+          for (const edition of version.editions) {
+            const code = generateCode(machineCode, edition);
+            html += `<span class="code-line">  ${edition.name}：</span>`;
+            html += `<span class="code-value">${code}</span>`;
+            html += `<button class="copy-icon" data-code="${escapeHtml(code)}" title="复制">📋</button>\n`;
+          }
+          html += "\n";
+        }
 
-      res += 'FinalShell 4.6\n';
-      res += '高级版:' + keccak384(code + 'csSf5*xlkgYSX,y').slice(12, 28) + '\n';
-      res += '专业版:' + keccak384(code + 'Scfg*ZkvJZc,s,Y').slice(12, 28) + '\n';
+        return html;
+      }
 
-      out.textContent = res;
-    }
+      function escapeHtml(str) {
+        const div = document.createElement("div");
+        div.textContent = str;
+        return div.innerHTML;
+      }
+
+      // ==========================================
+      // Toast 提示
+      // ==========================================
+      let toastTimer = null;
+      function showToast(msg) {
+        const toast = document.getElementById("toast");
+        toast.textContent = msg;
+        toast.classList.add("show");
+
+        clearTimeout(toastTimer);
+        toastTimer = setTimeout(() => toast.classList.remove("show"), 2200);
+      }
+
+      // ==========================================
+      // DOM 元素
+      // ==========================================
+      const inputEl = document.getElementById("machineCode");
+      const outputEl = document.getElementById("output");
+      const btnGenerate = document.getElementById("btnGenerate");
+
+      // ==========================================
+      // 生成按钮点击
+      // ==========================================
+      btnGenerate.addEventListener("click", () => {
+        const rawCode = inputEl.value.trim();
+
+        if (!rawCode) {
+          showToast("⚠️ 请先输入机器码");
+          outputEl.classList.remove("show");
+          return;
+        }
+
+        const html = generateAll(rawCode);
+        outputEl.innerHTML = `<pre>${html}</pre>`;
+        outputEl.classList.add("show");
+      });
+
+      // ==========================================
+      // 事件委托：每个激活码后面的复制按钮
+      // ==========================================
+      outputEl.addEventListener("click", async (e) => {
+        const btn = e.target.closest(".copy-icon");
+        if (!btn) return;
+
+        const code = btn.getAttribute("data-code");
+        if (!code) return;
+
+        try {
+          await navigator.clipboard.writeText(code);
+        } catch {
+          const textarea = document.createElement("textarea");
+          textarea.value = code;
+          textarea.style.position = "fixed";
+          textarea.style.opacity = "0";
+          document.body.appendChild(textarea);
+          textarea.select();
+          document.execCommand("copy");
+          document.body.removeChild(textarea);
+        }
+
+        btn.classList.add("copied");
+        const originalHtml = btn.innerHTML;
+        btn.innerHTML = "✓";
+        setTimeout(() => {
+          btn.classList.remove("copied");
+          btn.innerHTML = originalHtml;
+        }, 1500);
+      });
+
+      // ==========================================
+      // 回车快捷键
+      // ==========================================
+      inputEl.addEventListener("keydown", (e) => {
+        if (e.key === "Enter") {
+          e.preventDefault();
+          btnGenerate.click();
+        }
+      });
+    })();
   </script>
 </body>
 </html>
